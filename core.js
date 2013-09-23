@@ -3,7 +3,7 @@
 /**
  * Core object. Contains regularly used scripts for rapid deployment & easy updates.
  *
- * @version 0.3.2
+ * @version 0.3.4
  *
  * @property {function} init     A function to initialize all of the CORE functions.
  * @property {object}   browser  A collection of boolean values about the browser.
@@ -37,6 +37,7 @@ var CORE = {
     this.Expand.init();
     this.Forms.init();
     this.Overlay.init();
+    this.Rotator.init();
     this.ShowHide.init();
     this.ToolTip.init();
     this.Zoom.init();
@@ -121,6 +122,7 @@ var CORE = {
    */
   Forms: {
     submittingContent: 'Submitting ...',
+    useContactFormSeven: false,
     inFieldLabelsSettings: {
       'left': 5,
       'top': 2,
@@ -131,7 +133,9 @@ var CORE = {
       position: 'bottom left'
     },
     bindValidation: function (bindForm, overlay) {
-
+      if (this.useContactFormSeven) {
+        this.contactFormSevenSupport();
+      }
       /** Saves the form as a jQuery object. */
       var $bindForm = $(bindForm);
 
@@ -191,7 +195,15 @@ var CORE = {
             /** Check if the form processed successfully. */
             if (rtn) {
               var $formID = $bindForm.attr('id');
-              var formName = $formID.replace('-', ' ').toTitleCase();
+              console.log($formID);
+              if($formID != '' && $formID != undefined) {
+                var formName = $formID.replace('-', ' ').toTitleCase();
+              } else if ($('#form-name').val() != '') {
+                var formName = $('#form-name').val().replace('-', ' ').toTitleCase();
+              } else  {
+                var formName = 'Form Submission';
+              }
+
 
               /** Hook function for custom Google Analytics code. */
               if (typeof (window.customGA) === "function") {
@@ -202,8 +214,14 @@ var CORE = {
                 }
               }
 
-              /** Hide the form. */
-              $bindForm.slideUp();
+              if (typeof (window.reAjax) === "function") {
+                window.reAjax($formID);
+              }
+
+              if (!$bindForm.hasClass('re-ajax')) {
+                /** Hide the form. */
+                $bindForm.slideUp();
+              }
 
               /** Display confirmation message. */
               $('.ajax-confirm').slideDown();
@@ -235,9 +253,14 @@ var CORE = {
       if (typeof (formLoaded) === 'function') {
         formLoaded(bindForm);
       }
+    }, contactFormSevenSupport: function() {
+      if($('.wpcf7-validates-as-required').attr('required') != 'required') {
+        $('.wpcf7-validates-as-required').attr('required','required');
+      }
     },
     enableInFieldLabels: function () {
       if ($.isFunction($.fn.inFieldLabels)) {
+
         $('.infieldlabels label').not('.notinfield').inFieldLabels()
           .css('position', 'absolute')
           .css('left', CORE.Forms.inFieldLabelsSettings.left)
@@ -250,6 +273,48 @@ var CORE = {
       $('form').each(function () {
         CORE.Forms.bindValidation(this);
       });
+    }
+  },
+   /**
+  *
+  * Takes a string in format "param1=value1&param2=value2" and returns an object { param1: 'value1', param2: 'value2' }. If the "param1" ends with "[]" the param is treated as an array.
+  *
+  * Example:
+  *
+  * Input:  param1=value1&param2=value2
+  * Return: { param1 : value1, param2: value2 }
+  *
+  * Input:  param1[]=value1&param1[]=value2
+  * Return: { param1: [ value1, value2 ] }
+  *
+  * @todo Support params like "param1[name]=value1" (should return { param1: { name: value1 } })
+  */
+  getParams: function(){
+    if (typeof (CORE.params) !== "object") {
+      var serializedString = window.location.href.slice(window.location.href.indexOf('?') + 1);
+      var str = decodeURI(serializedString);
+      var pairs = str.split('&');
+      var obj = {}, p, idx, val;
+      for (var i=0, n=pairs.length; i < n; i++) {
+        p = pairs[i].split('=');
+        idx = p[0];
+
+        if (idx.indexOf("[]") == (idx.length - 2)) {
+          // Eh um vetor
+          var ind = idx.substring(0, idx.length-2)
+          if (obj[ind] === undefined) {
+            obj[ind] = [];
+          }
+          obj[ind].push(p[1]);
+        }
+        else {
+          obj[idx] = p[1];
+        }
+      }
+      CORE.params = obj;
+      return obj;
+    } else {
+      return CORE.params;
     }
   },
 
@@ -278,40 +343,47 @@ var CORE = {
       onBeforeLoad: function () {
         var $content = this.getOverlay().find('.overlay-content');
         var url = this.getTrigger().attr('href');
-        var extension = url.substr((url.lastIndexOf('.') + 1));
-        if (extension === 'jpg'
-            || extension === 'png'
-            || extension === 'gif'
-            || extension === 'jpeg') {
+        if (url.slice(-3) === 'jpg'
+            || url.slice(-3) === 'png'
+            || url.slice(-3) === 'gif'
+            || url.slice(-4) === 'jpeg') {
           $content.html('<img src="' + url + '" alt="">');
         } else {
-          var queryString = url.split('?');
-          if (queryString.length > 1) {
-            if (queryString[0].substr(-1) !== '/') {
-              queryString[0] += '/';
+          var query_string = url.split('?');
+
+          if (query_string.length > 1) {
+            if (query_string[0].slice(-1) !== '/') {
+              query_string[0] += '/';
             }
-            url = queryString[0] + 'ajax/?' + queryString[1];
+
+            url = query_string[0] + 'ajax/?' + query_string[1];
           } else {
-            if (url.substr(-1) !== '/') {
+            if (url.slice(-1) !== '/') {
               url += '/';
             }
             url += 'ajax/';
           }
+
           $content.load(url, function () {
             $(this).find('form').each(function () {
               CORE.Forms.bindValidation(this, true);
             });
           });
         }
-      },
-      onLoad: function () {
-        var left = Math.max(($(window).width() - $('#overlay').outerWidth()) / 2, 0);
-        $('#overlay').animate({'left': left + 'px'});
+
       },
       onClose: function () {
         this.getOverlay().find('.overlay-content').find('form').each(function () {
           $(this).data('validator').destroy();
         });
+        //Code below is to get a wistia ID...might be useful?
+        // var wid = $('.wistia_embed').attr('id');
+        // wid = wid.replace('wistia_', '');
+        // console.log('WID'+wid);
+        if ($('.wistia_embed').length) {
+          window.removeThisVideo();
+        }
+
         this.getOverlay().find('.overlay-content').empty().html(this.loadingContent);
         this.getOverlay().css('left', '0px');
       }
@@ -319,10 +391,27 @@ var CORE = {
     init: function () {
       if (!$('html').hasClass('lt-ie7') && $('.overlay').length) {
         var $overlayTriggers = $('a.overlay, .overlay a');
-        $('body').append('<div id="overlay" style="display: none"><div class="overlay-content">' + this.loadingContent + '</div></div>');
+        var params = CORE.getParams();
+        $('body').append('<div id="overlay"><div class="overlay-content">' + this.loadingContent + '</div></div>');
         $overlayTriggers.attr('rel', '#overlay');
         $overlayTriggers.overlay(this.settings);
+        if (params.core_action == 'overlay') {
+          this.processAction(params.core_action_href);
+        }
+
       }
+    },
+    processAction: function(target_href) {
+      var match = null;
+      $('.overlay').each(function() {
+        match = $(this).attr('href').match(target_href);
+
+        if (match !== null) {
+          $(this).click();
+        }
+
+        return (this != null);
+      });
     }
   },
 
@@ -336,9 +425,187 @@ var CORE = {
    */
   ShowHide: {
     init: function () {
-      $('.show-hide a[href^=#]').click(function () {
-        $('.show-hide').hide();
+      $showHide = $('.show-hide');
+      $showHide.hide();
+      $showHide.first().show();
+      $showHide.find('a[href^=#]').click(function () {
+        $showHide.hide();
         $($(this).attr('href')).show();
+        return false;
+      });
+    }
+  },
+
+  /**
+   * Handles banner rotation functionality.
+   *
+   * @property {object}   settings      The settings object passed to the ToolTips function.
+   * @property {function} init          Initializes the Rotator, its navigation, and click/hover events.
+   * @property {function} advanceSlide  Logic to control advancing to a particular slide.
+   *
+   * @type {Object}
+   * @uses jQuery
+   * @uses jQuery Tools
+   */
+  Rotator: {
+    activeClass: '.active-pip',
+    slideClass: '.rotate-slide',
+    slidesContainer: $('.rotator'),
+    slideNavContainer: $('#rotate-nav'),
+    slideNavLinks: $('#rotate-nav a'),
+    settings: {
+        autoplay: true,
+        autopause: true,
+        effect: 'horizontal',
+        interval: 5000,
+        showNav: true,
+        showPrevNext: false
+    },
+    init: function () {
+      if ( $('.rotator').length ) {
+
+        if( this.settings.showNav){
+          this.prepareNavLinks();
+        }
+
+        if( this.settings.showPrevNext) {
+          this.prepareNextPrevLinks();
+        }
+
+
+        if(this.settings.autoplay) {
+          // Timer - Passes the current slide nav link w/ class of active
+          window.slideTimer = setInterval(function(){CORE.Rotator.advanceSlide($(CORE.Rotator.activeClass).index());},CORE.Rotator.settings.interval);
+        }
+
+        if(this.settings.autopause) {
+          $('.rotator').on({
+            mouseover: function(){
+              clearInterval(slideTimer);
+            },
+            mouseout: function(){
+              if(CORE.Rotator.settings.autoplay) {
+                // Ensure all timers are cleared out
+                clearInterval(slideTimer);
+                // Reset the timer
+                slideTimer = setInterval(function(){CORE.Rotator.advanceSlide($(CORE.Rotator.activeClass).index());},CORE.Rotator.settings.interval);
+              }
+            }
+          });
+        }
+      }
+    },
+    advanceSlide: function(currentSlide) {
+      // Set the position of the next slide
+      var nextSlide = currentSlide + 1;
+
+      // Set next slide to first slide
+      if ( nextSlide == $(CORE.Rotator.slideNavContainer).children().length ){
+        nextSlide = 0;
+      }
+
+      // Remove active class from all slide nav links
+      // Add active class to clicked link
+      $(CORE.Rotator.slideNavContainer).children().removeClass('active-pip')
+              .eq(nextSlide).addClass('active-pip');
+
+      // Animate the position of the .rotator container
+      $(CORE.Rotator.slidesContainer).animate({
+        left: -($(CORE.Rotator.slideClass).width() * nextSlide)
+      });
+
+      if (typeof (window.slideCallback) === "function") {
+        window.slideCallback(nextSlide);
+      }
+    },
+    prepareNavLinks: function () {
+      // Contruct the slideshow navigation
+        $(CORE.Rotator.slidesContainer).children(CORE.Rotator.slideClass).each(function(){
+          var $this = $(this);
+          // Nav link to be added
+          var $navLink = $('<a href="#" class="pip"/>');
+
+          // Determine if it's the first link
+          // add Active class
+          if ( $this.index() == 0 ){
+            $navLink.addClass('active-pip');
+          }
+
+          // Add link to navigation
+          $(CORE.Rotator.slideNavContainer).append($navLink);
+
+        });
+
+        $(CORE.Rotator.slideNavContainer).on('click','a',function(){
+          var $this = $(this);
+          // Store the position of the clicked
+          // nav link within the link list
+          var $linkPos = $this.index();
+          var $currentActive = $linkPos--;
+
+          // Check if the previous slide is the last on in list
+          if ( $linkPos < 0 ) {
+            $linkPos = $(CORE.Rotator.slideNavLinks).length - 1;
+          }
+
+          // Call the advance slide function
+          // Pass current active slide position
+          CORE.Rotator.advanceSlide($linkPos);
+
+          // Reset timer
+          if(CORE.Rotator.settings.autoplay) {
+            clearInterval(window.slideTimer);
+            window.slideTimer = setInterval(function(){CORE.Rotator.advanceSlide($(CORE.Rotator.activeClass).index());},CORE.Rotator.settings.interval);
+          }
+
+          return false;
+        });
+    },
+    prepareNextPrevLinks: function () {
+      // Add on click event listener
+      $('#rotate-next').on('click',function(){
+        // Store the position of the clicked
+        var $linkPos = $(CORE.Rotator.activeClass).index();
+
+        // Check if the previous slide is the last on in list
+        if ( $linkPos < 0 ) {
+          $linkPos = $(CORE.Rotator.slideNavLinks).length - 1;
+        }
+
+        // Call the advance slide function
+        // Pass current active slide position
+        CORE.Rotator.advanceSlide($linkPos);
+
+        // Reset timer
+        if(CORE.Rotator.settings.autoplay) {
+          clearInterval(slideTimer);
+          slideTimer = setInterval(function(){CORE.Rotator.advanceSlide($(CORE.Rotator.activeClass).index());},CORE.Rotator.settings.interval);
+        }
+
+        return false;
+      });
+
+      $('#rotate-prev').on('click',function(){
+        // Store the position of the clicked
+        var $linkPos = $(CORE.Rotator.activeClass).index();
+
+                 // Check if the previous slide is the last on in list
+        if ( $linkPos < 1 ) {
+          $linkPos = $(CORE.Rotator.slideNavContainer).children().length - 2;
+        } else {
+          $linkPos = $(CORE.Rotator.activeClass).index() - 2;
+        }
+
+        // Call the advance slide function
+        // Pass current active slide position
+        CORE.Rotator.advanceSlide($linkPos);
+
+        // Reset timer
+        if(CORE.Rotator.settings.autoplay) {
+          clearInterval(slideTimer);
+          slideTimer = setInterval(function(){CORE.Rotator.advanceSlide($(CORE.Rotator.activeClass).index());},CORE.Rotator.settings.interval);
+        }
+
         return false;
       });
     }
@@ -372,10 +639,21 @@ var CORE = {
         var initialHeight = $tip.height();
         if ($trigger.data('title') === CORE.ToolTip.loadingContent) {
           var url = this.getTrigger().attr('href');
-          if (url.substr(-1) !== '/') {
-            url += '/';
+          var query_string = url.split('?');
+
+          if (query_string.length > 1) {
+
+            if (query_string[0].substr(-1) !== '/') {
+              query_string[0] += '/';
+            }
+
+            url = query_string[0] + 'ajax/?' + query_string[1];
+          } else {
+            if (url.substr(-1) !== '/') {
+              url += '/';
+            }
+            url += 'ajax/';
           }
-          url += 'ajax/';
           $tip.load(url, function () {
             $trigger.data('title', 'Loaded');
             var oldTop = parseInt($tip.css('top'), 10);
@@ -388,6 +666,7 @@ var CORE = {
     },
     init: function () {
       if ($('.tooltip').length) {
+        var params = CORE.getParams();
         $('.tooltip').each(function () {
           var $this = $(this);
           $this.attr('title', CORE.ToolTip.loadingContent);
@@ -396,7 +675,22 @@ var CORE = {
           return false;
         });
         $('.tooltip').tooltip(this.settings).dynamic();
+        if (params.core_action == 'tooltip') {
+          this.processAction(params.core_action_href);
+        }
       }
+    },
+    processAction: function(target_href) {
+      var match = null;
+      $('.tooltip').each(function() {
+        match = $(this).attr('href').match(target_href);
+
+        if (match !== null) {
+          $(this).mouseover();
+        }
+
+        return (this != null);
+      });
     }
   },
 
