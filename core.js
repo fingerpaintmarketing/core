@@ -11,7 +11,6 @@
  * @property {function} balance  A function to balance the height of two elements.
  * @property {object}   Forms    An object to manage forms.
  * @property {object}   Overlay  An object to manage overlays.
- * @property {object}   ShowHide An object to manage showing and hiding content.
  *
  * @author Adam Leder    <aleder@fingerpaintmarketing.com>
  * @author Beau Watson   <bwatson@fingerpaintmarketing.com>
@@ -32,11 +31,9 @@ var CORE = {
    * .init() function.
    */
   init: function () {
-    this.Expand.init();
     this.Forms.init();
     this.Overlay.init();
     this.Rotator.init();
-    this.ShowHide.init();
     this.ToolTip.init();
     this.Zoom.init();
   },
@@ -82,25 +79,6 @@ var CORE = {
     var balancedHeight = Math.max($element1.innerHeight(), $element2.innerHeight());
     $element1.height(balancedHeight - ($element1.innerHeight() - $element1.height()));
     $element2.height(balancedHeight - ($element2.innerHeight() - $element2.height()));
-  },
-
-  /**
-   * Handles toggling visibility of content using the jQuery Xpander plugin by Adam.
-   *
-   * @property {object}   settings Supplemental settings for the plugin.
-   * @property {function} init     Initializes the ShowHide functionality.
-   *
-   * @type {Object}
-   * @uses jQuery
-   */
-  Expand: {
-    settings: { },
-    init: function () {
-      var $expand = $('.xpander');
-      if ($expand.length) {
-        $expand.xpander(this.settings);
-      }
-    }
   },
 
   /**
@@ -409,27 +387,6 @@ var CORE = {
         }
 
         return (this != null);
-      });
-    }
-  },
-
-  /**
-   * Handles global show/hide functionality.
-   *
-   * @property {function} init Initializes the ShowHide functionality.
-   *
-   * @type {Object}
-   * @uses jQuery
-   */
-  ShowHide: {
-    init: function () {
-      $showHide = $('.show-hide');
-      $showHide.hide();
-      $showHide.first().show();
-      $showHide.find('a[href^=#]').click(function () {
-        $showHide.hide();
-        $($(this).attr('href')).show();
-        return false;
       });
     }
   },
