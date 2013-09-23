@@ -3,7 +3,7 @@
 /**
  * Core object. Contains regularly used scripts for rapid deployment & easy updates.
  *
- * @version 0.3.4
+ * @version 1.0.0
  *
  * @property {function} init     A function to initialize all of the CORE functions.
  * @property {object}   browser  A collection of boolean values about the browser.
@@ -19,10 +19,8 @@
  * @author Kevin Fodness <kfodness@fingerpaintmarketing.com>
 
  * @uses Google Analytics
- * @uses InFieldLabels 0.1.2 (http://fuelyourcoding.com/scripts/infield/)
- * @uses jQuery 1.7.2 (bundled with jQuery tools)
- * @uses jQuery Tools Full 1.2.7 (http://jquerytools.org/)
- * @uses jqZoom 2.3 (http://www.mind-projects.it/projects/jqzoom/)
+ * @uses jQuery 1 (http://jquery.com/)
+ * @uses jQuery UI (http://jqueryui.com/)
  * @uses To Title Case 2.0.1 (https://github.com/gouch/to-title-case)
  */
 var CORE = {
