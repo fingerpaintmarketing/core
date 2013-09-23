@@ -1,4 +1,7 @@
-/*global $, navigator, _gaq, formLoaded, window*/
+/*global $ */
+
+/* Enable strict mode. */
+'use strict';
 
 /**
  * Core object. Contains regularly used scripts for rapid deployment & easy updates.
@@ -22,35 +25,62 @@
  */
 var CORE = {
 
-  /**
-   * Initialize function. Initializes all CORE functionality.
-   *
-   * Individual CORE functions can be initialized by calling their individual
-   * .init() function.
-   */
-  init: function () {
-    this.Forms.init();
-    this.Overlay.init();
-    this.Rotator.init();
-    this.ToolTip.init();
-    this.Zoom.init();
-  },
+        /**
+         * Initialize function. Initializes all CORE functionality.
+         *
+         * Individual CORE functions can be initialized by calling their individual
+         * .init() function.
+         */
+        init: function () {
+            this.Forms.init();
+            this.Overlay.init();
+            this.Rotator.init();
+            this.ToolTip.init();
+            this.Zoom.init();
+        },
 
-  /**
-   * Column balance function - makes a pair of columns the same height.
-   *
-   * @param string element1 The jQuery search string for the first element.
-   * @param string element2 The jQuery search string for the first element.
-   *
-   * @uses jQuery
-   */
-  balance: function (element1, element2) {
-    var $element1 = $(element1);
-    var $element2 = $(element2);
-    var balancedHeight = Math.max($element1.innerHeight(), $element2.innerHeight());
-    $element1.height(balancedHeight - ($element1.innerHeight() - $element1.height()));
-    $element2.height(balancedHeight - ($element2.innerHeight() - $element2.height()));
-  },
+        /**
+         * Column balance function - makes a pair of columns the same height.
+         *
+         * @param string element1 The jQuery search string for the first element.
+         * @param string element2 The jQuery search string for the second element.
+         *
+         * @uses jQuery
+         */
+        balance: function (element1, element2) {
+            var $element1 = $(element1),
+                $element2 = $(element2),
+                balancedHeight = Math.max($element1.innerHeight(), $element2.innerHeight());
+            $element1.height(balancedHeight - ($element1.innerHeight() - $element1.height()));
+            $element2.height(balancedHeight - ($element2.innerHeight() - $element2.height()));
+        },
+
+        /**
+         * To title case function - converts a string to title case, replacing dashes and
+         * underscores with spaces.
+         *
+         * @param string title The title string to transform to title case.
+         * 
+         * @see https://github.com/gouch/to-title-case/blob/master/to-title-case.js
+         *
+         * @return string The modified string, in title case format.
+         */
+        toTitleCase: function (title) {
+            var smallWords = /^(a|an|and|as|at|but|by|en|for|if|in|of|on|or|the|to|vs?\.?|via)$/i;
+            return this.replace(/([^\W_]+[^\s-]*) */g, function (match, p1, index, title) {
+                if (index > 0 && index + p1.length !== title.length &&
+                p1.search(smallWords) > -1 && title.charAt(index - 2) !== ":" &&
+                title.charAt(index - 1).search(/[^\s-]/) < 0) {
+                    return match.toLowerCase();
+                }
+
+                if (p1.substr(1).search(/[A-Z]|\../) > -1) {
+                    return match;
+                }
+
+                return match.charAt(0).toUpperCase() + match.substr(1);
+            });
+        },
 
   /**
    * Forms object - handles form validation and Google Analytics tracking.
