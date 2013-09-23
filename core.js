@@ -6,8 +6,6 @@
  * @version 1.0.0
  *
  * @property {function} init     A function to initialize all of the CORE functions.
- * @property {object}   browser  A collection of boolean values about the browser.
- * @property {object}   device   A collection of boolean values about the device.
  * @property {function} balance  A function to balance the height of two elements.
  * @property {object}   Forms    An object to manage forms.
  * @property {object}   Overlay  An object to manage overlays.
@@ -36,33 +34,6 @@ var CORE = {
     this.Rotator.init();
     this.ToolTip.init();
     this.Zoom.init();
-  },
-
-  /**
-   * Object containing boolean flags for the current browser.
-   *
-   * @type object
-   *
-   * @uses jQuery
-   */
-  browser: {
-    isIE: ($.browser.msie !== undefined),
-    isIE6: ($.browser.version.substr(0, 1) === '6'),
-    isIE7: ($.browser.version.substr(0, 1) === '7'),
-    isIE8: ($.browser.version.substr(0, 1) === '8'),
-    isIE9: ($.browser.version.substr(0, 1) === '9'),
-    isIE10: ($.browser.version.substr(0, 1) === '10')
-  },
-
-  /**
-   * Object containing boolean flags for the current device.
-   *
-   * @type object
-   */
-  device: {
-    isMobile: (/iphone|ipad|ipod|android|blackberry|mini|mobi|windows\s(ce|phone)|iemobile|palm|mobile/i.test(navigator.userAgent.toLowerCase())),
-    isIpad: (navigator.userAgent.match(/iPad/i)),
-    isIphone: (navigator.userAgent.match(/iPhone/i))
   },
 
   /**
